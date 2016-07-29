@@ -1,2 +1,2 @@
 # PyPedWorks (or PedWorks.py)
-Python program which applies network theory to model genealogical structured data (pedigrees).
+A Python program which applies network theory to model genealogical structured data (pedigrees).
