@@ -80,7 +80,7 @@ def main():
     PedigNetwork = input_diGraph(pedfile)
 
 
-    aMatrix(PedigNetwork)
+    #aMatrix(PedigNetwork)
 
     # PedigNetwork must be a nx.DiGraph object
     # check if there is any cycles in the pedigree
