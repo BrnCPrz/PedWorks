@@ -1,6 +1,13 @@
 # PyPedWorks (or PedWorks.py)
 A Python program which applies network theory to model genealogical structured data (pedigrees).
 
+**Authors:**
+
+* Bruno C. Perez <brunocpvet@gmail.com>
+* Ricardo V. Ventura
+* Julio C. C. Balieiro
+
+**Latest version:** 0.1.8 - (Aug 5, 2016)
 
 ### Instructions:
   * Open the terminal.
