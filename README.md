@@ -40,7 +40,7 @@ Performs a network analysis after applying network theory into a pedigree.
 
 * Calculates basic measures: Number of nodes/edges, Density, Average (out)degree
 * Calculates centralities for all nodes:
-* (out)Degree centrality
+       * (out)Degree centrality
        * Closeness Centrality
        * Betweeness Centrality
        * Eigenvector Centrality
