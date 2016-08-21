@@ -116,4 +116,4 @@ A brief description of the available options.
  * 8,425 individuals (cattle)
  * Mean inbreeding coefficient of 1.60%
  * Number of distinct relevant communitities = 20
-[![example2.png](https://s10.postimg.org/ur7xgr1mh/example2.png)](https://postimg.org/image/6aprma0vp/)
+[![example2.png](https://s9.postimg.org/5va1e1jb3/example2.png)](https://postimg.org/image/r4xnovzln/)
