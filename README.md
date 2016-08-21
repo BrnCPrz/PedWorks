@@ -101,5 +101,14 @@ A brief description of the available options.
 
 
 ## Pedigree Network drawing examples
+### Example Pedigree [1]
+ * 11,767 individuals (cattle)
+ * Mean inbreeding coefficient of 2.30%
+ * Number of distinct relevant communitities = 31
 [![example1.png](https://s9.postimg.org/x805sg3lb/example1.png)](https://postimg.org/image/5kngeciej/)
+
+### Example Pedigree [2]
+ * 8,425 individuals (cattle)
+ * Mean inbreeding coefficient of 1.60%
+ * Number of distinct relevant communitities = 20
 [![example2.png](https://s10.postimg.org/ur7xgr1mh/example2.png)](https://postimg.org/image/6aprma0vp/)
