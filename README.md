@@ -110,7 +110,7 @@ A brief description of the available options.
  * 11,767 individuals (cattle)
  * Mean inbreeding coefficient of 2.30%
  * Number of distinct relevant communitities = 31
-[![example1.png](https://s9.postimg.org/x805sg3lb/example1.png)](https://postimg.org/image/5kngeciej/)
+[![example1.png](https://s14.postimg.org/v2w1gamqp/example1.png)](https://postimg.org/image/ibhv9scyl/)
 
 ### Example Pedigree [2]
  * 8,425 individuals (cattle)
