@@ -101,6 +101,11 @@ A brief description of the available options.
 
 
 ## Pedigree Network drawing examples
+ The following examples were obtained by real genealogical data analysis using PedWorks. 
+  * Topological sorting by Fruchterman & Reingold force-directed method.
+  * Community detection algorithm by Louvain method.
+  * Nodes (individuals) with same colors belong to the same community.
+ 
 ### Example Pedigree [1]
  * 11,767 individuals (cattle)
  * Mean inbreeding coefficient of 2.30%
