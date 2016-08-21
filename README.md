@@ -104,3 +104,4 @@ A brief description of the available options.
 
 ## Pedigree Network drawing examples
 [![example1.png](https://s9.postimg.org/x805sg3lb/example1.png)](https://postimg.org/image/5kngeciej/)
+[![example2.png](https://s14.postimg.org/jd5hrcu4x/example2.png)](https://postimg.org/image/lhpusfvrh/)
