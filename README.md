@@ -101,3 +101,6 @@ A brief description of the available options.
 
 
 ## A complete User's Guide manual is under construction!
+
+## Pedigree Network drawing examples
+[![example1.png](https://s9.postimg.org/x805sg3lb/example1.png)](https://postimg.org/image/5kngeciej/)
