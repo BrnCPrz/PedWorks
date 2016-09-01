@@ -7,7 +7,7 @@ A Python program which applies network theory to model genealogical structured d
 * Ricardo V. Ventura
 * Julio C. C. Balieiro
 
-**Latest version:** 0.1.8 - (Aug 5, 2016)
+**Latest version:** 0.1.9 - (Sep 1, 2016)
 
 **Requires:**
 
@@ -87,6 +87,9 @@ A brief description of the available options.
      * ``ealpha`` = specifies the transparency of the edges. ex:. ``0.1`` - ``1.0``
      * ``ewidth`` = specifies the width of the edges. ex:. ``0.1`` - ``1.0``
      * ``ecolor`` = specifies the RGB code for the color of the nodes. [RBG colochart](http://www.rapidtables.com/web/color/RGB_Color.htm)
+     * ``initpos`` = ``TRUE/FALSE`` - If ``TRUE``, node positioning start as defined in a ``.txt`` file.
+     * ``posfile`` = specifies the file (``.txt``) containning node positioning. (format: ``node  x-axis  y-axis``)
+     * ``savepos`` = ``TRUE/FALSE`` - If True, saves final node positioning in ``nodepos.txt`` file.
 
 * ``draw_ group`` and ``draw_multigroup`` function specific argument:
      * ``group_list`` = specifies he name(s) of the file(s) containning a list of individuals to be highlighted. It may received multiple groups. ex:. ``[group1.txt, group2.txt, group3.txt]``
