@@ -24,19 +24,19 @@ __author__ = """\n""".join(['Bruno C. Perez (brunocpvet@gmail.com)',
                             'Ricardo V. Ventura (rventura@uoguelph.ca)'])
 
 import ConfigParser as CoP
+import itertools
+import math
 import os
 import sys
-import math
 from collections import deque
 from operator import itemgetter
-import itertools
-
-import community #http://perso.crans.org/aynaud/communities/
-import matplotlib
+from mpl_toolkits.axes_grid1 import AxesGrid
+import community  # http://perso.crans.org/aynaud/communities/
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import pandas as pd
+import matplotlib
 from matplotlib import patches
 
 
@@ -44,11 +44,11 @@ def main():
     """
     In continuous development.
     """
-    #print matplotlib.get_backend()
+    # print matplotlib.get_backend()
 
     # PedWork's greeter
-    print "\n\n\tStarting \033[0;34mPedWork\033[0;m.py (version - 0.1.0)"
-    # print "\n\n\tStarting \033[0;31mPedWork\033[0;m.py (version - 0.1.0)"
+    print "\n\n\tStarting \033[0;34mPedWorks\033[0;m.py (v0.1.8)"
+    # print "\n\n\tStarting \033[0;31mPedWorks\033[0;m.py (v0.1.8)"
 
     # check command line entries
     print "\n\tChecking command line entries..."
@@ -73,14 +73,15 @@ def main():
         print "\tCheck [SETUP].pedfile option in", sys.argv[1]
         sys.exit()
 
-
     # get pedfile name
     pedfile = config.get('SETUP', 'pedfile')
     # transform the input pedigree file into a networkX graph object
     PedigNetwork = input_diGraph(pedfile)
 
+    # print "Size ->", len(nx.maximal_independent_set(PedigNetwork))
+    # print nx.maximal_independent_set(PedigNetwork)
 
-    #aMatrix(PedigNetwork)
+    # aMatrix(PedigNetwork)
 
     # PedigNetwork must be a nx.DiGraph object
     # check if there is any cycles in the pedigree
@@ -164,9 +165,17 @@ def main():
         ewidth = config.getfloat('OPTIONS', 'ewidth')
         ecolor = config.get('OPTIONS', 'ecolor')
         cSize = config.getint('OPTIONS', 'cSize')
-        ped_report(PedigNetwork, ComSize=cSize)
-        ped_clus(pedgraph=PedigNetwork, ComSize=cSize, nscale=nscale, nalpha=nalpha, nsize=nsize,
-                 ealpha=ealpha, ewidth=ewidth, ecolor=ecolor)
+        initpos = config.getboolean('OPTIONS', 'initpos')
+        savepos = config.getboolean('OPTIONS', 'savepos')
+        if initpos ==True:
+            posfile = config.get('OPTIONS', 'posfile')
+            ped_report(PedigNetwork, ComSize=cSize)
+            ped_clus(pedgraph=PedigNetwork, ComSize=cSize, nscale=nscale, nalpha=nalpha, nsize=nsize,
+                 ealpha=ealpha, ewidth=ewidth, ecolor=ecolor, initpos=initpos, savepos=savepos, posfile=posfile)
+        else:
+            ped_report(PedigNetwork, ComSize=cSize)
+            ped_clus(pedgraph=PedigNetwork, ComSize=cSize, nscale=nscale, nalpha=nalpha, nsize=nsize,
+                 ealpha=ealpha, ewidth=ewidth, ecolor=ecolor, initpos=initpos, savepos=savepos)
     elif function == "draw_group":
         PedigNetwork = PedigNetwork.to_undirected()
         print "\n\tFUNCTION", ">", function
@@ -216,9 +225,101 @@ def main():
         infile = config.get('OPTIONS', 'infile')
         nbreed = config.getint('OPTIONS', 'nbreed')
         breed_comp(pedgraph=PedigNetwork, inFile=infile, nbreed=nbreed)
+    elif function == "visual_mating":
+        PedigNetwork = PedigNetwork.to_undirected()
+        print "\n\tFUNCTION", ">", function
+        print "\tStarting...\n\t> Visual mating method"
+        nscale = config.getfloat('OPTIONS', 'nscale')
+        nalpha = config.getfloat('OPTIONS', 'nalpha')
+        nsize = config.getfloat('OPTIONS', 'nsize')
+        ealpha = config.getfloat('OPTIONS', 'ealpha')
+        ewidth = config.getfloat('OPTIONS', 'ewidth')
+        ecolor = config.get('OPTIONS', 'ecolor')
+        infile = config.get('OPTIONS', 'infile')
+        atCol = config.getint('OPTIONS', 'atCol')
+        visualMate(pedgraph=PedigNetwork, inFile=infile, nscale=nscale, nalpha=nalpha, nsize=nsize,
+                  ealpha=ealpha, ewidth=ewidth, ecolor=ecolor,
+                  atCol=atCol)
     else:
         print "\n\t> ERROR:", function, "is not a valid function."
         sys.exit()
+
+
+class NodeFinder(object):
+    """callback for matplotlib to display an annotation when points are
+    clicked on.  The point which is closest to the click and within
+    xtol and ytol is identified.
+
+    Register this function like this:
+
+    scatter(xdata, ydata)
+    af = AnnoteFinder(xdata, ydata, annotes)
+    connect('button_press_event', af)
+    """
+
+    def __init__(self, xdata, ydata, annotes, ax=None, xtol=None, ytol=None):
+        self.data = list(zip(xdata, ydata, annotes))
+        if xtol is None:
+            xtol = ((max(xdata) - min(xdata)) / float(len(xdata))) / 0.01
+        if ytol is None:
+            ytol = ((max(ydata) - min(ydata)) / float(len(ydata))) / 0.01
+        self.xtol = xtol
+        self.ytol = ytol
+        if ax is None:
+            self.ax = plt.gca()
+        else:
+            self.ax = ax
+        self.drawnAnnotations = {}
+        self.links = []
+
+    def distance(self, x1, x2, y1, y2):
+        """
+        return the distance between two points
+        """
+        return (math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2))
+
+    def __call__(self, event):
+
+        if event.inaxes:
+
+            clickX = event.xdata
+            clickY = event.ydata
+            if (self.ax is None) or (self.ax is event.inaxes):
+                annotes = []
+                # print(event.xdata, event.ydata)
+                for x, y, a in self.data:
+                    # print(x, y, a)
+                    if ((clickX - self.xtol < x < clickX + self.xtol) and
+                            (clickY - self.ytol < y < clickY + self.ytol)):
+                        annotes.append(
+                            (self.distance(x, clickX, y, clickY), x, y, a))
+                if annotes:
+                    annotes.sort()
+                    distance, x, y, annote = annotes[0]
+                    self.drawAnnote(event.inaxes, x, y, annote)
+                    for l in self.links:
+                        l.drawSpecificAnnote(annote)
+
+    def drawAnnote(self, ax, x, y, annote):
+        """
+        Draw the annotation on the plot
+        """
+        if (x, y) in self.drawnAnnotations:
+            markers = self.drawnAnnotations[(x, y)]
+            for m in markers:
+                m.set_visible(not m.get_visible())
+            self.ax.figure.canvas.draw_idle()
+        else:
+            t = ax.text(x+5, y+5.5, "%s" % (annote), bbox=dict(facecolor="#EEE8AA", alpha=0.9),
+                        horizontalalignment='center')
+            m = ax.scatter([x], [y], marker='o', c='r', zorder=100)
+            self.drawnAnnotations[(x, y)] = (t, m)
+            self.ax.figure.canvas.draw_idle()
+
+    def drawSpecificAnnote(self, annote):
+        annotesToDraw = [(x, y, a) for x, y, a in self.data if a == annote]
+        for x, y, a in annotesToDraw:
+            self.drawAnnote(self.ax, x, y, a)
 
 
 def calculate_density(graph):
@@ -337,7 +438,7 @@ def calculate_katz_centrality(graph):
     """
     Compute the katz centrality for nodes.
     """
-    #if not graph.is_directed():
+    # if not graph.is_directed():
     #    raise nx.NetworkXError( \
     #       "katz_centrality() not defined for undirected graphs.")
     print "\n\tCalculating Katz Centrality..."
@@ -407,7 +508,7 @@ def run_analysis(dg, cent_plot=False):
     print "\t   >  Number of connections:", len(dg.edges())
     print "\t   >  Average (out)degree:", (sum(dg.out_degree().values()) / float(len(dg.nodes())))
 
-    #print dg.out_degree().values()
+    # print dg.out_degree().values()
 
     print "\n\tBuilding Degree Histogram plot."
     degree_histogram(dg)
@@ -432,12 +533,12 @@ def run_analysis(dg, cent_plot=False):
     with open('pedStats.txt', 'w') as stats:
         for n, d in sorted(dg.nodes_iter(data=True), key=getKey):
             stats.writelines('{:5s} {:4d} {:4f} {:4f} {:4f} {:4f} {:4f} {:4f} \n'.format(str(n), d['degree'],
-                                                                                   d['outdegree'],
-                                                                                   d['closeness'],
-                                                                                   d['betweenness'],
-                                                                                   d['outdegree'],
-                                                                                   d['eigenvector'],
-                                                                                   d['katz']))
+                                                                                         d['outdegree'],
+                                                                                         d['closeness'],
+                                                                                         d['betweenness'],
+                                                                                         d['outdegree'],
+                                                                                         d['eigenvector'],
+                                                                                         d['katz']))
     stats.close()
     print "\n\t> Pedigree/Network statistics written to pedStats.txt"
 
@@ -762,11 +863,35 @@ def add_node_attribute(inFile, pedgraph, animal=1, atCol=4, atName="attr1"):
     atName - name for the attribute
     """
     ped_df = pd.read_table(inFile, header=None, delim_whitespace=True)
+    #print ped_df
     dic_ped = dict(zip(ped_df[animal - 1], ped_df[atCol - 1]))
-    # print dic_ped
+    #print dic_ped
+    correct_dic_ped = {str(k):int(v) for k,v in dic_ped.items()}
+    #print correct_dic_ped
+    for node, value in dic_ped.items():
+        pedgraph.node[str(node)]["EBV"] = value
 
-    o = nx.set_node_attributes(pedgraph, atName, dic_ped)
-    return dic_ped
+    return correct_dic_ped
+
+
+def add_ebv_attribute(inFile, pedgraph, animal=1, atCol=4, atName="attr1"):
+    """
+    inFile - pedigree as .txt file
+    pedgraph - Pedigree as a networkX graph object
+    animal - column for the animal ID
+    atCol - column for the attribute
+    atName - name for the attribute
+    """
+    ped_df = pd.read_table(inFile, header=None, delim_whitespace=True)
+    #print ped_df
+    dic_ped = dict(zip(ped_df[animal - 1], ped_df[atCol - 1]))
+    #print dic_ped
+    correct_dic_ped = {str(k):int(-v) for k,v in dic_ped.items()}
+    #print correct_dic_ped
+    for node, value in dic_ped.items():
+        pedgraph.node[str(node)]["EBV"] = value
+
+    return correct_dic_ped
 
 
 def ped_draw(pedgraph, nscale=200, nalpha=0.9, nsize=15, ncolor='blue', ealpha=0.3, ewidth=0.5, ecolor="#000000"):
@@ -795,12 +920,13 @@ def ped_draw(pedgraph, nscale=200, nalpha=0.9, nsize=15, ncolor='blue', ealpha=0
     with open('calculatedD.txt', 'w') as dist:
         for k, v in sorted(pos.iteritems(), key=getKey):
             for l, o in sorted(pos.iteritems(), key=getKey):
-                #print k, 'x', l, node_distance(pos[k][0], pos[k][1], pos[l][0], pos[l][1])
+                # print k, 'x', l, node_distance(pos[k][0], pos[k][1], pos[l][0], pos[l][1])
                 Dmatrix.append([node_distance(pos[k][0], pos[k][1], pos[l][0], pos[l][1])])
-                dist.writelines('{:7s} {:7s} {:4f}\n'.format(k, l, node_distance(pos[k][0], pos[k][1], pos[l][0], pos[l][1])))
+                dist.writelines(
+                    '{:7s} {:7s} {:4f}\n'.format(k, l, node_distance(pos[k][0], pos[k][1], pos[l][0], pos[l][1])))
 
-    #Dmatrixnp = np.array(Dmatrix)
-    #Dmatrixnp.shape = (len(pedgraph.nodes()),len(pedgraph.nodes()))
+    # Dmatrixnp = np.array(Dmatrix)
+    # Dmatrixnp.shape = (len(pedgraph.nodes()),len(pedgraph.nodes()))
 
 
     nx.draw_networkx_nodes(pedgraph, alpha=nalpha, pos=pos,
@@ -815,7 +941,8 @@ def ped_draw(pedgraph, nscale=200, nalpha=0.9, nsize=15, ncolor='blue', ealpha=0
     plt.show()
 
 
-def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, ewidth=0.3, ecolor="#000000"):
+def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, ewidth=0.3, ecolor="#000000",
+             savepos=False, initpos=False, posfile="nodepos.txt"):
     '''
     Receives a networkx graph and plots.
         - needs matplotlib package
@@ -831,44 +958,76 @@ def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, e
     :return:
     '''
     # function level variable definition
-    #config = CoP.RawConfigParser()
-    #config.read(sys.argv[1])
-    #pedfile = config.get('SETUP', 'pedfile')
-    #PedigNetwork = input_ped(pedfile)
+    # config = CoP.RawConfigParser()
+    # config.read(sys.argv[1])
+    # pedfile = config.get('SETUP', 'pedfile')
+    # PedigNetwork = input_ped(pedfile)
 
-    part = community.best_partition(pedgraph,resolution=1.0)
-    pos = nx.spring_layout(pedgraph, scale=nscale)
+    zdgrnode = []
+    for u in pedgraph:  # of each node
+        if pedgraph.degree(u) == 0:
+            zdgrnode.append(u)
+    print zdgrnode
+
+    for i in zdgrnode:
+        pedgraph.remove_node(i)
+
+    part = community.best_partition(pedgraph, resolution=1.0)
+    # dendo = community.generate_dendrogram(pedgraph)
+    # for level in range(len(dendo) - 1) :
+    #    print("partition at level", level, "is", community.partition_at_level(dendo, level))
+    if initpos == False:
+        pos = nx.spring_layout(pedgraph, k=0.025, scale=nscale, iterations=200)
+    else:
+        pos_data = pd.read_table(posfile, header=None, delim_whitespace=True,names=["node", "posx", "posy"],
+                                 dtype={"node": np.str, "posx": np.float64,"posy": np.float64  })
+        # print pos_data
+        l, t = [], []
+        for index, row in pos_data.iterrows():
+            # print row[0], row[1], row[2]
+            l.append(row[0])
+            t.append(np.asarray((row[1], row[2])))
+        lastpos = dict(zip(l, t))
+        pos = nx.spring_layout(pedgraph, pos=lastpos, k=2.5 * (1 / np.sqrt(len(pedgraph.nodes()))), scale=nscale, iterations=50)
+        # print pos
+    # generate pos.txt containning positions for each node
+    # used to restart drawing algorithm from a given point
+    if savepos == True:
+    # writes the linear distance between nodes in the graph (varies with POS)
+        with open('nodepos.txt', 'w') as nodepos:
+            for k in pos:
+                # print k, pos[k][0], pos[k][1]
+                nodepos.writelines('{:7s} {:4f} {:4f}\n'.format(str(k), pos[k][0], pos[k][1]))
 
     lessOneList = []
     for i in set(part.values()):
-            n_member = [nodes for nodes in part.keys() if part[nodes] == i]
-            if len(n_member) < ComSize:
-                lessOneList.append(n_member)
+        n_member = [nodes for nodes in part.keys() if part[nodes] == i]
+        if len(n_member) < ComSize:
+            lessOneList.append(n_member)
 
-    #print lessOneList
+    # print lessOneList
     adjList = list(itertools.chain(*lessOneList))
 
-    #print adjList
+    # print adjList
     drawNodes = []
     for i in pedgraph.nodes():
         if i not in adjList:
             drawNodes.append(i)
 
-    #print adjList
-    #print len(drawNodes)
-    #print len(part)
+    # print adjList
+    # print len(drawNodes)
+    # print len(part)
     for k, v in part.items():
         if k not in drawNodes:
             part.pop(k, None)
 
-    #print len(part)
+    # print len(part)
     values = []
     for i in pedgraph.nodes():
         if i in drawNodes:
             values.append(part.get(i))
 
-    #values = [part.get(k)+1 for k in pedgraph.nodes()]
-
+    # values = [part.get(k)+1 for k in pedgraph.nodes()]
     nx.draw_networkx_nodes(pedgraph, pos,
                            alpha=nalpha, nodelist=drawNodes, node_color=values, node_size=nsize, linewidths=0.2,
                            cmap=plt.get_cmap('Paired'))
@@ -877,19 +1036,22 @@ def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, e
                            alpha=nalpha, nodelist=adjList, node_color="white", node_size=nsize, linewidths=0.4)
 
     # label plot not feasible for larger networks
-    #nx.draw_networkx_labels(pedgraph, pos)
+    # nx.draw_networkx_labels(pedgraph, pos)
 
     nx.draw_networkx_edges(pedgraph, pos, alpha=ealpha, width=ewidth, edge_color=ecolor)
-    # ped_report(pedgraph)
+    # plt.axis([nscale/2,nscale/2,nscale/2,nscale/2])
     plt.axis("off")
+    # ped_report(pedgraph, ComSize=ComSize)
+
+
     plt.show()
 
 
 def ped_report(pedgraph, ComSize):
     # number of detected groups
     part = community.best_partition(pedgraph, resolution=1.0)
-    values = [part.get(k)+1 for k in pedgraph.nodes()]
-    #print values
+    values = [part.get(k) + 1 for k in pedgraph.nodes()]
+    # print values
     print "\n\tTotal Detected Groups:", max(values)
     # number of groups containing less then 5 individuals
     xlist = []
@@ -1396,32 +1558,32 @@ def aMatrix(pedgraph):
             sireList.append(b[0])
             damList.append(b[1])
         else:
-           sireList.append(b[0])
-           damList.append(b[1])
-           # print i, b[0], b[1]
+            sireList.append(b[0])
+            damList.append(b[1])
+            # print i, b[0], b[1]
 
     sireArray = np.asarray(sireList, dtype=int)
     damArray = np.asarray(damList, dtype=int)
 
-    #print sireArray
-    #print damArray
+    # print sireArray
+    # print damArray
 
     def BuildAMatrix(sirev, damv):
         n = len(sirev)
         N = n + 1
         A = np.zeros((N, N))
-        #x = len(sirev[sirev == 0])
+        # x = len(sirev[sirev == 0])
 
         sirev[sirev == 0] = N
         damv[damv == 0] = N
-        sirev[sirev !=0] -= 1
-        damv[damv !=0] -= 1
+        sirev[sirev != 0] -= 1
+        damv[damv != 0] -= 1
 
-        #print sirev
-        #print damv
+        # print sirev
+        # print damv
 
         for a in range(0, n):
-            #print n
+            # print n
             A[a, a] = 1 + (A[sirev[a], damv[a]]) / 2
             for j in range(a + 1, n):
                 if j > n:
@@ -1429,38 +1591,146 @@ def aMatrix(pedgraph):
                 A[a, j] = (A[a, sirev[j]] + A[a, damv[j]]) / 2
                 A[j, a] = A[a, j]
 
-        return A[0:n,0:n]
+        return A[0:n, 0:n]
 
     print "\n\t\tBuilding A-Matrix..."
     A = BuildAMatrix(sireArray, damArray)
-    #print A
+    # print A
 
     print "\n\t\tAttaching kinship coefficients to edge weights"
     for i, u in pedgraph.in_edges():
-        #print i,"parent of ", u
-        pedgraph.add_edge(str(i), str(u), weight=A[int(i)-1, int(u)-1])
+        # print i,"parent of ", u
+        pedgraph.add_edge(str(i), str(u), weight=A[int(i) - 1, int(u) - 1])
 
     # generate D matrix (nodes x nodes)
     Amatrix = []
     # writes the linear distance between nodes in the graph (varies with POS)
     with open('calculatedA.txt', 'w') as dist:
-        for k in range(0,(len(A))):
-            for l in range(0,(len(A))):
-                if k==l:
+        for k in range(0, (len(A))):
+            for l in range(0, (len(A))):
+                if k == l:
                     Amatrix.append(1.0)
-                    dist.writelines('{:7d} {:7d} {:4f}\n'.format(k+1, l+1, 1.0))
+                    dist.writelines('{:7d} {:7d} {:4f}\n'.format(k + 1, l + 1, 1.0))
                 else:
-                #print k, 'x', l, node_distance(pos[k][0], pos[k][1], pos[l][0], pos[l][1])
+                    # print k, 'x', l, node_distance(pos[k][0], pos[k][1], pos[l][0], pos[l][1])
                     Amatrix.append(A[k][l])
-                    dist.writelines('{:7d} {:7d} {:4f}\n'.format(k+1, l+1, A[k][l]))
+                    dist.writelines('{:7d} {:7d} {:4f}\n'.format(k + 1, l + 1, A[k][l]))
 
-    #for i,u in pedgraph.in_edges():
-        #print i, "to", u, pedgraph.get_edge_data(str(i),str(u))
+                    # for i,u in pedgraph.in_edges():
+                    # print i, "to", u, pedgraph.get_edge_data(str(i),str(u))
     print "\n\t\tA-Matrix successfully generated."
 
 
-if __name__ == "__main__":
+def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
+    '''
+    Function to offset the "center" of a colormap. Useful for
+    data with a negative min and positive max and you want the
+    middle of the colormap's dynamic range to be at zero
 
+    Input
+    -----
+      cmap : The matplotlib colormap to be altered
+      start : Offset from lowest point in the colormap's range.
+          Defaults to 0.0 (no lower ofset). Should be between
+          0.0 and `midpoint`.
+      midpoint : The new center of the colormap. Defaults to
+          0.5 (no shift). Should be between 0.0 and 1.0. In
+          general, this should be  1 - vmax/(vmax + abs(vmin))
+          For example if your data range from -15.0 to +5.0 and
+          you want the center of the colormap at 0.0, `midpoint`
+          should be set to  1 - 5/(5 + 15)) or 0.75
+      stop : Offset from highets point in the colormap's range.
+          Defaults to 1.0 (no upper ofset). Should be between
+          `midpoint` and 1.0.
+    '''
+    cdict = {
+        'red': [],
+        'green': [],
+        'blue': [],
+        'alpha': []
+    }
+
+    # regular index to compute the colors
+    reg_index = np.linspace(start, stop, 257)
+
+    # shifted index to match the data
+    shift_index = np.hstack([
+        np.linspace(0.0, midpoint, 128, endpoint=False),
+        np.linspace(midpoint, 1.0, 129, endpoint=True)
+    ])
+
+    for ri, si in zip(reg_index, shift_index):
+        r, g, b, a = cmap(ri)
+
+        cdict['red'].append((si, r, r))
+        cdict['green'].append((si, g, g))
+        cdict['blue'].append((si, b, b))
+        cdict['alpha'].append((si, a, a))
+
+    newcmap = matplotlib.colors.LinearSegmentedColormap(name, cdict)
+    plt.register_cmap(cmap=newcmap)
+
+    return newcmap
+
+
+def visualMate(pedgraph, inFile, atCol=4, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, ewidth=0.3, ecolor="#000000"):
+    '''
+    Receives a networkx graph and plots.
+        - needs matplotlib package
+
+    :param pedgraph: networkX graph object (pedigree)
+    :param nscale: scale of the plot
+    :param nalpha: node transparency
+    :param nsize:  node size
+    :param ncolor: node color
+    :param ealpha: edge transparency
+    :param ewidth: edge width
+    :param ecolor: edge color
+    :return:
+    '''
+    # function level variable definition
+    # config = CoP.RawConfigParser()
+    # config.read(sys.argv[1])
+    # pedfile = config.get('SETUP', 'pedfile')
+    # PedigNetwork = input_ped(pedfile)
+
+    pos = nx.spring_layout(pedgraph, k= 2.5 * (1 / np.sqrt(len(pedgraph.nodes()))), scale=nscale, iterations=200)
+
+    part = add_ebv_attribute(inFile=inFile, pedgraph=pedgraph, animal=1, atName="EBV", atCol=atCol)
+
+    values = [part.get(node) for node in pedgraph.nodes()]
+
+
+    fig, ax = plt.subplots()
+    x, y, labels = [], [], []
+    for key in pos:
+        #print key, pos[key][0], pos[key][1]
+        x.append(pos[key][0])
+        y.append(pos[key][1])
+        labels.append(str(key))
+
+    orig_cmap = matplotlib.cm.coolwarm
+    shifted_cmap = shiftedColorMap(orig_cmap, midpoint=0.55, name='shifted')
+    nx.draw_networkx_nodes(pedgraph, pos,
+                           alpha=nalpha, node_color=values, node_size=nsize, linewidths=0.5,
+                           #cmap=plt.get_cmap('coolwarm'))
+                           cmap=shifted_cmap)
+
+    # label plot not feasible for larger networks
+    # nx.draw_networkx_labels(pedgraph, pos)
+
+    nx.draw_networkx_edges(pedgraph, pos, alpha=ealpha, width=ewidth, edge_color=ecolor)
+    # plt.axis([nscale/2,nscale/2,nscale/2,nscale/2])
+    plt.axis("off")
+    # ped_report(pedgraph, ComSize=ComSize)
+
+    af = NodeFinder(xdata=x, ydata=y, annotes=labels)
+    fig.canvas.mpl_connect('button_press_event', af)
+
+    plt.show()
+
+
+if __name__ == "__main__":
     main()
 
     # standard exiting
