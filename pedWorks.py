@@ -30,7 +30,7 @@ import os
 import sys
 from collections import deque
 from operator import itemgetter
-from mpl_toolkits.axes_grid1 import AxesGrid
+
 import community  # http://perso.crans.org/aynaud/communities/
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -47,7 +47,7 @@ def main():
     # print matplotlib.get_backend()
 
     # PedWork's greeter
-    print "\n\n\tStarting \033[0;34mPedWorks\033[0;m.py (v0.1.8)"
+    print "\n\n\tStarting \033[0;34mPedWorks\033[0;m.py (v0.1.9)"
     # print "\n\n\tStarting \033[0;31mPedWorks\033[0;m.py (v0.1.8)"
 
     # check command line entries
@@ -527,18 +527,18 @@ def run_analysis(dg, cent_plot=False):
     dg, closn = calculate_closeness(dg)
     dg, bet = calculate_betweenness(dg)
     dg, eigen = calculate_eigenvector_centrality(dg.to_undirected())
-    dg, katz = calculate_katz_centrality(dg)
+    #dg, katz = calculate_katz_centrality(dg)
 
     # create and write pedStats.txt
     with open('pedStats.txt', 'w') as stats:
         for n, d in sorted(dg.nodes_iter(data=True), key=getKey):
-            stats.writelines('{:5s} {:4d} {:4f} {:4f} {:4f} {:4f} {:4f} {:4f} \n'.format(str(n), d['degree'],
-                                                                                         d['outdegree'],
-                                                                                         d['closeness'],
-                                                                                         d['betweenness'],
-                                                                                         d['outdegree'],
-                                                                                         d['eigenvector'],
-                                                                                         d['katz']))
+            stats.writelines('{:10s} {:4d} {:4f} {:4f} {:4f} {:4f} \n'.format(     str(n),
+                                                                                   d['degree'],
+                                                                                   d['outdegree'],
+                                                                                   d['closeness'],
+                                                                                   d['betweenness'],
+                                                                                   d['eigenvector']))
+                                                                                   #d['katz']))
     stats.close()
     print "\n\t> Pedigree/Network statistics written to pedStats.txt"
 
@@ -977,7 +977,7 @@ def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, e
     # for level in range(len(dendo) - 1) :
     #    print("partition at level", level, "is", community.partition_at_level(dendo, level))
     if initpos == False:
-        pos = nx.spring_layout(pedgraph, k=0.025, scale=nscale, iterations=200)
+        pos = nx.spring_layout(pedgraph, k=0.002, scale=nscale, iterations=1000)
     else:
         pos_data = pd.read_table(posfile, header=None, delim_whitespace=True,names=["node", "posx", "posy"],
                                  dtype={"node": np.str, "posx": np.float64,"posy": np.float64  })
