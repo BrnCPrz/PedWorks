@@ -24,11 +24,11 @@ A Python program which applies network theory to model genealogical structured d
   * Go to pedWorks.py file directory and run:
 
 
-``python2 pedWorks.py test.ini`` - for systems where Python 3.X is default.
+``python2 pedWorks.py setup.ini`` - for systems where Python 3.X is default.
 
 or
 
-``python pedWorks.py test.ini`` - for systems where Python 2.7 is default.
+``python pedWorks.py setup.ini`` - for systems where Python 2.7 is default.
 
 ## Functions:
 
