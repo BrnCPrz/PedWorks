@@ -14,6 +14,7 @@ A Python program which applies graph theory to model genealogical structured dat
 * NetworkX
 * Numpy
 * Pandas
+* Matplotlib
 * Collections
 * Louvain [download](http://perso.crans.org/aynaud/communities/)
 
