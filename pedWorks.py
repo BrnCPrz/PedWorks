@@ -1,5 +1,5 @@
 """
-    PedWorks.py | v0.80
+    PedWorks.py | v0.1.9
     Modeling genealogical structured data with networks theory.
 
     Input:
@@ -32,11 +32,12 @@ from collections import deque
 from operator import itemgetter
 
 import community  # http://perso.crans.org/aynaud/communities/
+import matplotlib
+#matplotlib.use('GTKAgg')
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import pandas as pd
-import matplotlib
 from matplotlib import patches
 
 
@@ -167,15 +168,17 @@ def main():
         cSize = config.getint('OPTIONS', 'cSize')
         initpos = config.getboolean('OPTIONS', 'initpos')
         savepos = config.getboolean('OPTIONS', 'savepos')
-        if initpos ==True:
+        kpar = config.getfloat('OPTIONS', 'kpar')
+        niter = config.getint('OPTIONS', 'niter')
+        if initpos == True:
             posfile = config.get('OPTIONS', 'posfile')
             ped_report(PedigNetwork, ComSize=cSize)
             ped_clus(pedgraph=PedigNetwork, ComSize=cSize, nscale=nscale, nalpha=nalpha, nsize=nsize,
-                 ealpha=ealpha, ewidth=ewidth, ecolor=ecolor, initpos=initpos, savepos=savepos, posfile=posfile)
+                 ealpha=ealpha, ewidth=ewidth, ecolor=ecolor, initpos=initpos, savepos=savepos, posfile=posfile, kpar=kpar, niter=niter)
         else:
             ped_report(PedigNetwork, ComSize=cSize)
             ped_clus(pedgraph=PedigNetwork, ComSize=cSize, nscale=nscale, nalpha=nalpha, nsize=nsize,
-                 ealpha=ealpha, ewidth=ewidth, ecolor=ecolor, initpos=initpos, savepos=savepos)
+                 ealpha=ealpha, ewidth=ewidth, ecolor=ecolor, initpos=initpos, savepos=savepos, kpar=kpar, niter=niter)
     elif function == "draw_group":
         PedigNetwork = PedigNetwork.to_undirected()
         print "\n\tFUNCTION", ">", function
@@ -337,16 +340,26 @@ def calculate_degree(graph):
     nx.set_node_attributes(g, 'degree', deg)
     return g, deg
 
+def calculate_odegree(graph):
+    # will only work on DiGraph (directed graph)
+    print "\tCalculating Outdegree..."
+    g = graph
+    odeg = g.out_degree()
+    nx.set_node_attributes(g, 'odegree', odeg)
+    outdeg_sorted = sorted(odeg.items(), key=itemgetter(1), reverse=True)
+    for key, value in outdeg_sorted[0:10]:
+        print "\t   > ", key, value
+    return g, odeg
 
 def calculate_indegree(graph):
     # will only work on DiGraph (directed graph)
-    print "Calculating Indegree..."
+    print "\tCalculating Indegree..."
     g = graph
     indeg = g.in_degree()
     nx.set_node_attributes(g, 'indegree', indeg)
     indeg_sorted = sorted(indeg.items(), key=itemgetter(1), reverse=True)
     for key, value in indeg_sorted[0:10]:
-        print "   > ", key, value
+        print "\t   > ", key, value
     return g, indeg
 
 
@@ -511,17 +524,20 @@ def run_analysis(dg, cent_plot=False):
     # print dg.out_degree().values()
 
     print "\n\tBuilding Degree Histogram plot."
-    degree_histogram(dg)
+    # degree_histogram(dg)
 
     # draw_induced(dg)
+    
     dg, dens = calculate_density(dg)
     dg, deg = calculate_degree(dg)
+    dg, odeg = calculate_odegree(dg)
 
     if type(dg).__name__ == 'DiGraph':
         # dg, indeg = calculate_indegree(dg)
         # dg, indegcent = out_degree_centrality(dg)
         dg, outdeg = calculate_outdegree(dg)
-    else:
+    else:  
+        print "\n\tGraph is not directed. Outputing pure degree centrality!"
         dg, degcent = calculate_degree_centrality(dg)
 
     dg, closn = calculate_closeness(dg)
@@ -533,7 +549,7 @@ def run_analysis(dg, cent_plot=False):
     with open('pedStats.txt', 'w') as stats:
         for n, d in sorted(dg.nodes_iter(data=True), key=getKey):
             stats.writelines('{:10s} {:4d} {:4f} {:4f} {:4f} {:4f} \n'.format(     str(n),
-                                                                                   d['degree'],
+                                                                                   d['odegree'],
                                                                                    d['outdegree'],
                                                                                    d['closeness'],
                                                                                    d['betweenness'],
@@ -942,7 +958,7 @@ def ped_draw(pedgraph, nscale=200, nalpha=0.9, nsize=15, ncolor='blue', ealpha=0
 
 
 def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, ewidth=0.3, ecolor="#000000",
-             savepos=False, initpos=False, posfile="nodepos.txt"):
+             savepos=False, initpos=False, posfile="nodepos.txt", kpar=0.002, niter=500):
     '''
     Receives a networkx graph and plots.
         - needs matplotlib package
@@ -967,7 +983,7 @@ def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, e
     for u in pedgraph:  # of each node
         if pedgraph.degree(u) == 0:
             zdgrnode.append(u)
-    print zdgrnode
+    # print zdgrnode
 
     for i in zdgrnode:
         pedgraph.remove_node(i)
@@ -977,7 +993,7 @@ def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, e
     # for level in range(len(dendo) - 1) :
     #    print("partition at level", level, "is", community.partition_at_level(dendo, level))
     if initpos == False:
-        pos = nx.spring_layout(pedgraph, k=0.002, scale=nscale, iterations=1000)
+        pos = nx.spring_layout(pedgraph, k=kpar, scale=nscale, iterations=niter)
     else:
         pos_data = pd.read_table(posfile, header=None, delim_whitespace=True,names=["node", "posx", "posy"],
                                  dtype={"node": np.str, "posx": np.float64,"posy": np.float64  })
@@ -988,16 +1004,16 @@ def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, e
             l.append(row[0])
             t.append(np.asarray((row[1], row[2])))
         lastpos = dict(zip(l, t))
-        pos = nx.spring_layout(pedgraph, pos=lastpos, k=2.5 * (1 / np.sqrt(len(pedgraph.nodes()))), scale=nscale, iterations=50)
+        pos = nx.spring_layout(pedgraph, pos=lastpos, k=0.0005, scale=nscale, iterations=1)
         # print pos
     # generate pos.txt containning positions for each node
     # used to restart drawing algorithm from a given point
     if savepos == True:
-    # writes the linear distance between nodes in the graph (varies with POS)
+    # writes the x and y axis of each node in the graph.
         with open('nodepos.txt', 'w') as nodepos:
             for k in pos:
                 # print k, pos[k][0], pos[k][1]
-                nodepos.writelines('{:7s} {:4f} {:4f}\n'.format(str(k), pos[k][0], pos[k][1]))
+                nodepos.writelines('{:s} {:s} {:s}\n'.format(str(k), pos[k][0], pos[k][1]))
 
     lessOneList = []
     for i in set(part.values()):
@@ -1042,7 +1058,6 @@ def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, e
     # plt.axis([nscale/2,nscale/2,nscale/2,nscale/2])
     plt.axis("off")
     # ped_report(pedgraph, ComSize=ComSize)
-
 
     plt.show()
 
@@ -1333,7 +1348,7 @@ def degree_histogram(pedgraph):
 
     print "\t   >  Degree histogram plot created in ~/dgRankPlot.png"
     plt.savefig("dgRankPlot.png")
-    plt.show()
+    #plt.show()
 
 
 def ped_dendogram(pedgraph):
