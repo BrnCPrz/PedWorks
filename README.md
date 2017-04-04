@@ -7,7 +7,7 @@ A Python program which applies graph theory to model genealogical structured dat
 * Ricardo V. Ventura
 * Julio C. C. Balieiro
 
-**Latest version:** 0.1.9 - (Sep 1, 2016)
+**Latest version:** 0.2.1 - (April 4, 2017)
 
 **Required modules:**
 
