@@ -9,7 +9,7 @@ A Python program which applies graph theory to model genealogical structured dat
 
 **Latest version:** 0.1.9 - (Sep 1, 2016)
 
-**Requires:**
+**Required modules:**
 
 * NetworkX
 * Numpy
@@ -81,6 +81,8 @@ A brief description of the available options.
  
  
   * ``Draw`` function arguments:
+     * ``niter`` = number of iterations for the Fruchterman & Reingold (F&R) algorithm. ex:. ``1000`` - ``20000 or >``
+     * ``kpar`` = value of the K parameter, which controls attractive and repulsive forces in F&R algorithm. ex:. ``0.001`` - ``0.05``
      * ``nscale`` = specifies scale in which the network will be plotted (the x and y axis range)
      * ``nalpha`` = specifies the transparency of the nodes. ex:. ``0.1`` - ``1.0``
      * ``nsize`` = specifies the size of the nodes. ex:. ``10`` - ``100``.
