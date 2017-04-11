@@ -6,13 +6,15 @@ A Python program which applies graph theory to model genealogical structured dat
 * Bruno C. Perez <brunocpvet@gmail.com>
 * Ricardo V. Ventura
 * Julio C. C. Balieiro
+* Juliana M. Dementschuk
 
-**Latest version:** 0.2.1 - (April 4, 2017)
+**Latest version:** 0.2.1 - (April 4th, 2017)
 
 **Required modules:**
 
 * NetworkX
 * Numpy
+* Scipy
 * Pandas
 * Matplotlib
 * Collections
@@ -40,11 +42,12 @@ or
 Performs a network analysis after applying network theory into a pedigree.
 
 * Calculates basic measures: Number of nodes/edges, Density, Average (out)degree
-* Calculates centralities for all nodes:
+* Calculates the following centralities for all nodes:
        * (out)Degree centrality
        * Closeness Centrality
        * Betweeness Centrality
        * Eigenvector Centrality
+       * Katz Centrality
        * If ``ctplot = TRUE``, creates a plot for each centrality.
 * Creates the (out) degree rank plot for the pedigree.
     
@@ -77,7 +80,7 @@ A brief description of the available options.
 
   * ``Analysis`` function arguments:
      * ``ctplot`` = ``TRUE/FALSE`` if ``TRUE``, creates the centrality plots for the pedigree.
-       * (Out)Degree, Closeness, Betweeness and Eigenvector centralities.
+       * (Out)Degree, Closeness, Betweeness, Eigenvector and Katz centralities.
  
  
   * ``Draw`` function arguments:
