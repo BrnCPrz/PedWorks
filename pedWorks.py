@@ -48,7 +48,8 @@ def main():
     # print matplotlib.get_backend()
 
     # PedWork's greeter
-    print "\n\n\tStarting \033[0;34mPedWorks\033[0;m.py (v0.1.9)"
+    print "\n\n\tStarting \033[0;34mPedWorks\033[0;m.py (v0.2.0)"
+    print "\tLast updated: 4th April, 2017."
     # print "\n\n\tStarting \033[0;31mPedWorks\033[0;m.py (v0.1.8)"
 
     # check command line entries
@@ -342,7 +343,7 @@ def calculate_degree(graph):
 
 def calculate_odegree(graph):
     # will only work on DiGraph (directed graph)
-    print "\tCalculating Outdegree..."
+    print "\n\tCalculating Outdegree..."
     g = graph
     odeg = g.out_degree()
     nx.set_node_attributes(g, 'odegree', odeg)
@@ -403,13 +404,13 @@ def out_degree_centrality(G):
 
 def calculate_outdegree(graph):
     # will only work on DiGraph (directed graph)
-    print "\tCalculating Outdegree Centrality..."
+    print "\n\tCalculating Outdegree Centrality..."
     g = graph
     outdeg = out_degree_centrality(g)
     nx.set_node_attributes(g, 'outdegree', outdeg)
     outdeg_sorted = sorted(outdeg.items(), key=itemgetter(1), reverse=True)
     for key, value in outdeg_sorted[0:10]:
-        print "\t   > ", key, value
+        print "\t   > ", key, round(value, 4)
     return g, outdeg
 
 
@@ -420,7 +421,7 @@ def calculate_closeness(graph):
     nx.set_node_attributes(g, 'closeness', clo)
     degclos_sorted = sorted(clo.items(), key=itemgetter(1), reverse=True)
     for key, value in degclos_sorted[0:10]:
-        print "\t   > ", key, value
+        print "\t   > ", key, round(value, 4)
     return g, clo
 
 
@@ -431,7 +432,7 @@ def calculate_betweenness(graph):
     nx.set_node_attributes(g, 'betweenness', bc)
     degbetw_sorted = sorted(bc.items(), key=itemgetter(1), reverse=True)
     for key, value in degbetw_sorted[0:10]:
-        print "\t   > ", key, value
+        print "\t   > ", key, round(value, 4)
     return g, bc
 
 
@@ -442,7 +443,7 @@ def calculate_eigenvector_centrality(graph):
     nx.set_node_attributes(g, 'eigenvector', ec)
     degeign_sorted = sorted(ec.items(), key=itemgetter(1), reverse=True)
     for key, value in degeign_sorted[0:10]:
-        print "\t   > ", key, value
+        print "\t   > ", key, round(value, 4)
 
     return g, ec
 
@@ -455,12 +456,17 @@ def calculate_katz_centrality(graph):
     #    raise nx.NetworkXError( \
     #       "katz_centrality() not defined for undirected graphs.")
     print "\n\tCalculating Katz Centrality..."
+    print "\tWarning: This might take a long time larger pedigrees."
     g = graph
-    kt = nx.katz_centrality(g)
+    A = nx.adjacency_matrix(g)
+    from scipy import linalg as LA
+    max_eign = float(np.real(max(LA.eigvals(A.todense()))))
+    print "\t-Max.Eigenvalue(A) ", round(max_eign, 3)
+    kt = nx.katz_centrality(g, tol=1.0e-4, alpha=1/max_eign-0.01, beta=1.0, max_iter=999999 )
     nx.set_node_attributes(g, 'katz', kt)
     katz_sorted = sorted(kt.items(), key=itemgetter(1), reverse=True)
     for key, value in katz_sorted[0:10]:
-        print "\t   > ", key, value
+        print "\t   > ", key, round(value, 4)
     return g, kt
 
 
@@ -471,7 +477,7 @@ def calculate_degree_centrality(graph):
     nx.set_node_attributes(g, 'degree_cent', dc)
     degcent_sorted = sorted(dc.items(), key=itemgetter(1), reverse=True)
     for key, value in degcent_sorted[0:10]:
-        print "   > ", key, value
+        print "   > ", key, round(value, 4)
 
     return graph, dc
 
@@ -543,20 +549,29 @@ def run_analysis(dg, cent_plot=False):
     dg, closn = calculate_closeness(dg)
     dg, bet = calculate_betweenness(dg)
     dg, eigen = calculate_eigenvector_centrality(dg.to_undirected())
-    #dg, katz = calculate_katz_centrality(dg)
+    dg, katz = calculate_katz_centrality(dg)
 
     # create and write pedStats.txt
     with open('pedStats.txt', 'w') as stats:
         for n, d in sorted(dg.nodes_iter(data=True), key=getKey):
-            stats.writelines('{:10s} {:4d} {:4f} {:4f} {:4f} {:4f} \n'.format(     str(n),
+            stats.writelines('{:10s} {:4d} {:4f} {:4f} {:4f} {:4f} {:4f} \n'.format(     str(n),
                                                                                    d['odegree'],
                                                                                    d['outdegree'],
                                                                                    d['closeness'],
                                                                                    d['betweenness'],
-                                                                                   d['eigenvector']))
-                                                                                   #d['katz']))
+                                                                                   d['eigenvector'],
+                                                                                   d['katz']))
     stats.close()
-    print "\n\t> Pedigree/Network statistics written to pedStats.txt"
+
+    import fileinput
+
+    headers = 'ID OutDegree OutDegCent CloseCent BetweenCent EigenCent KatzCent'.split()
+    for line in fileinput.input(['pedStats.txt'], inplace=True):
+        if fileinput.isfirstline():
+            print '  '.join(headers)
+        print line
+
+    print "\n\t> Node centrality values written to pedStats.txt"
 
     # routine to print centrality plots
     if cent_plot == True:
@@ -1180,6 +1195,7 @@ def write_reord_ped(inFile, outfile='output.txt', frmt="fwf", outheader=False):
 
     if len(PedMerge01['anID'].unique()) < len(PedMerge01['anID']):
         print '\n\tDuplicates were detected!'
+        print '\n\t\t> Processing duplicated IDs!'
 
     PedMerge02 = PedMerge01.drop_duplicates(subset='anID')
     PedMerge03 = PedMerge02.fillna('0')
