@@ -6,7 +6,7 @@ A Python program which applies graph theory to model genealogical structured dat
 * Bruno C. Perez <brunocpvet@gmail.com>
 * Ricardo V. Ventura
 * Julio C. C. Balieiro
-* Juliana M. Dementschuk
+* Juliana D. Machado
 
 **Latest version:** 0.2.1 - (April 4th, 2017)
 
