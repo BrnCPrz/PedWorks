@@ -33,7 +33,8 @@ from operator import itemgetter
 
 import community  # http://perso.crans.org/aynaud/communities/
 import matplotlib
-#matplotlib.use('GTKAgg')
+# SOME SYSTEMS NEED TO STABLISH GTKAgg device
+matplotlib.use('GTKAgg')
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -462,7 +463,7 @@ def calculate_katz_centrality(graph):
     from scipy import linalg as LA
     max_eign = float(np.real(max(LA.eigvals(A.todense()))))
     print "\t-Max.Eigenvalue(A) ", round(max_eign, 3)
-    kt = nx.katz_centrality(g, tol=1.0e-4, alpha=1/max_eign-0.01, beta=1.0, max_iter=999999 )
+    kt = nx.katz_centrality(g, tol=1.0e-4, alpha=1/max_eign-0.01, beta=1.0, max_iter=999999)
     nx.set_node_attributes(g, 'katz', kt)
     katz_sorted = sorted(kt.items(), key=itemgetter(1), reverse=True)
     for key, value in katz_sorted[0:10]:
@@ -684,7 +685,9 @@ def draw_partition(graph, partition):
 
 
 def directed_modularity_matrix(G, nodelist=None):
-    """Return the directed modularity matrix of G.
+    """ INCLUDED FOR TESTING PURPOSES - Not implemented yet.
+    
+    Return the directed modularity matrix of G.
     The modularity matrix is the matrix B = A - <A>, where A is the adjacency
     matrix and <A> is the expected adjacency matrix, assuming that the graph
     is described by the configuration model.
@@ -1010,8 +1013,8 @@ def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, e
     if initpos == False:
         pos = nx.spring_layout(pedgraph, k=kpar, scale=nscale, iterations=niter)
     else:
-        pos_data = pd.read_table(posfile, header=None, delim_whitespace=True,names=["node", "posx", "posy"],
-                                 dtype={"node": np.str, "posx": np.float64,"posy": np.float64  })
+        pos_data = pd.read_table(posfile, header=None, delim_whitespace=True, names=["node", "posx", "posy"],
+                                 dtype={"node": np.str, "posx": np.float64,"posy": np.float64})
         # print pos_data
         l, t = [], []
         for index, row in pos_data.iterrows():
@@ -1060,11 +1063,11 @@ def ped_clus(pedgraph, ComSize, nscale=200, nalpha=0.95, nsize=15, ealpha=0.2, e
 
     # values = [part.get(k)+1 for k in pedgraph.nodes()]
     nx.draw_networkx_nodes(pedgraph, pos,
-                           alpha=nalpha, nodelist=drawNodes, node_color=values, node_size=nsize, linewidths=0.2,
+                           alpha=nalpha, nodelist=drawNodes, node_color=values, node_size=nsize, linewidths=0.1,
                            cmap=plt.get_cmap('Paired'))
 
     nx.draw_networkx_nodes(pedgraph, pos,
-                           alpha=nalpha, nodelist=adjList, node_color="white", node_size=nsize, linewidths=0.4)
+                           alpha=nalpha, nodelist=adjList, node_color="white", node_size=nsize, linewidths=0.1)
 
     # label plot not feasible for larger networks
     # nx.draw_networkx_labels(pedgraph, pos)
@@ -1082,7 +1085,8 @@ def ped_report(pedgraph, ComSize):
     part = community.best_partition(pedgraph, resolution=1.0)
     values = [part.get(k) + 1 for k in pedgraph.nodes()]
     # print values
-    print "\n\tTotal Detected Groups:", max(values)
+    print "\tCommunity threshold for this run | cSize =", ComSize
+    print "\n\tTotal Detected Communities:", max(values)
     # number of groups containing less then 5 individuals
     xlist = []
     for i in set(part.values()):
@@ -1090,9 +1094,9 @@ def ped_report(pedgraph, ComSize):
         if len(n_member) < ComSize:
             xlist.append(i)
 
-    print "\tConflicting Groups Detected: ", len(xlist)
-    # number of real communitites detected (>=5 individuals)
-    print "\tConsistent Groups Detected: ", max(values) - len(xlist)
+    print "\tUnder threshold communities detected: ", len(xlist)
+    # number of real communities detected (>= defined threshold individuals)
+    print "\tOver threshold communities detected: ", max(values) - len(xlist)
     print "\tFinal modularity: ", community.modularity(part, pedgraph)
 
     # creates Report_01 file containing group_number and number of individuals within group
@@ -1139,12 +1143,8 @@ def cycle_detect(G):
 def ped_sort(file):
     """
         - Reorders a pedigree (dict) by the Kahn's Algorithm.
-
-            TO IMPLEMENT:
-                - create map
-                - get values
-                - write .txt reordered and renumbered
-        """
+        
+     """
     pedgraph = input_diGraph(inFile=file)
     print "\n\tApplying Kahn's Algorithm... "
     in_degree = {u: 0 for u in pedgraph}  # determine in-degree
